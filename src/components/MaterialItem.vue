@@ -1,8 +1,6 @@
-<!-- src/components/MaterialItem.vue -->
 <template>
   <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3 transition-all hover:shadow-md">
     
-    <!-- Fila principal: Nombre y Favorito -->
     <div class="flex justify-between items-start gap-2">
       <div class="flex items-start gap-3 flex-1">
         <button @click="toggleFavorite(item.id)" class="mt-0.5 text-2xl transition-transform active:scale-75">
@@ -13,7 +11,6 @@
       </div>
     </div>
 
-    <!-- Fila de Colores (Solo si es un cable) -->
     <div v-if="item.hasColors" class="flex flex-wrap gap-2 pl-9">
       <button 
         v-for="color in colors" 
@@ -30,7 +27,6 @@
       </button>
     </div>
 
-    <!-- Metros (solo cables, solo si ya hay cantidad cargada) -->
     <div v-if="item.hasColors && currentQty > 0" class="pl-9 -mt-1">
       <button
         @click="editMeters"
@@ -40,7 +36,15 @@
       </button>
     </div>
 
-    <!-- Fila de Cantidad (+ / - / editable a mano) -->
+    <div v-if="item.hasMms && currentQty > 0" class="pl-9 -mt-1">
+      <button
+        @click="editMms"
+        class="text-sm text-blue-600 font-medium underline decoration-dotted active:opacity-60"
+      >
+        🔩 {{ currentMeters ? `${currentMeters} mm` : 'Agregar medida (mm)' }}
+      </button>
+    </div>
+
     <div class="flex justify-end items-center gap-4 mt-1">
       <button 
         @click="decrement"
@@ -83,13 +87,22 @@ const props = defineProps({
 const selectedColor = ref(props.item.hasColors ? colors[0].id : null);
 
 const currentQty = computed(() => getQuantity(props.item.id, selectedColor.value));
-const currentMeters = computed(() => props.item.hasColors ? getMeters(props.item.id, selectedColor.value) : null);
+// Reutilizamos el campo 'meters' de tu store para guardar la medida (metros o milímetros)
+const currentMeters = computed(() => (props.item.hasColors || props.item.hasMms) ? getMeters(props.item.id, selectedColor.value) : null);
 
-// Pide los metros por popup nativo
+// Popup para pedir los metros (Cables)
 const askMeters = (defaultVal) => {
   const input = window.prompt('¿Cuántos metros?', defaultVal ?? '');
-  if (input === null) return currentMeters.value; // canceló, mantiene lo que había
+  if (input === null) return currentMeters.value;
   const val = parseFloat(input.replace(',', '.'));
+  return isNaN(val) ? null : val;
+};
+
+// NUEVO: Popup para pedir los milímetros (Tornillos)
+const askMms = (defaultVal) => {
+  const input = window.prompt('¿De cuántos mm es el tornillo?', defaultVal ?? '');
+  if (input === null) return currentMeters.value;
+  const val = parseInt(input, 10);
   return isNaN(val) ? null : val;
 };
 
@@ -98,6 +111,9 @@ const increment = () => {
   if (props.item.hasColors) {
     const meters = askMeters(currentMeters.value);
     updateQuantity(props.item, newQty, selectedColor.value, meters);
+  } else if (props.item.hasMms) {
+    const mms = askMms(currentMeters.value);
+    updateQuantity(props.item, newQty, selectedColor.value, mms);
   } else {
     updateQuantity(props.item, newQty, selectedColor.value);
   }
@@ -112,6 +128,12 @@ const editMeters = () => {
   updateQuantity(props.item, currentQty.value, selectedColor.value, meters);
 };
 
+// NUEVO: Permite editar los mm al hacer clic sobre el texto decorado
+const editMms = () => {
+  const mms = askMms(currentMeters.value);
+  updateQuantity(props.item, currentQty.value, selectedColor.value, mms);
+};
+
 const handleManualInput = (event) => {
   let value = parseInt(event.target.value, 10);
   if (isNaN(value) || value < 0) value = 0;
@@ -119,6 +141,9 @@ const handleManualInput = (event) => {
   if (props.item.hasColors && value > 0) {
     const meters = askMeters(currentMeters.value);
     updateQuantity(props.item, value, selectedColor.value, meters);
+  } else if (props.item.hasMms && value > 0) {
+    const mms = askMms(currentMeters.value);
+    updateQuantity(props.item, value, selectedColor.value, mms);
   } else {
     updateQuantity(props.item, value, selectedColor.value);
   }

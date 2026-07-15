@@ -119,26 +119,27 @@ export const materialCategories = [
       { id: 'zocalos', name: 'Zócalos' }
     ]
   },
-  {
-    id: 'conexion-fijacion',
-    name: 'Conexión, Tierra y Fijación',
-    items: [
-      { id: 'borneras', name: 'Borneras' },
-      { id: 'regletas', name: 'Regletas' },
-      { id: 'con-rapidos', name: 'Conectores rápidos' },
-      { id: 'term-ojal', name: 'Terminales tipo ojal' },
-      { id: 'term-horq', name: 'Terminales tipo horquilla' },
-      { id: 'term-tub', name: 'Terminales tubulares' },
-      { id: 'cinta-aisla', name: 'Cinta aisladora' },
-      { id: 'tubo-termo', name: 'Tubo termocontraíble' },
-      { id: 'jabalina', name: 'Jabalina de cobre' },
-      { id: 'con-jaba', name: 'Conector para jabalina' },
-      { id: 'caja-insp', name: 'Caja de inspección p/ jabalina' },
-      { id: 'tarugos', name: 'Tarugos' },
-      { id: 'tornillos', name: 'Tornillos' },
-      { id: 'arandelas', name: 'Arandelas' },
-      { id: 'abrazaderas', name: 'Abrazaderas' },
-      { id: 'grampas-cab', name: 'Grampas para cable' }
-    ]
-  }
+// src/data/materials.js (Modificar solo la parte de tornillos)
+    {
+      id: 'conexion-fijacion',
+      name: 'Conexión, Tierra y Fijación',
+      items: [
+        { id: 'borneras', name: 'Borneras' },
+        { id: 'regletas', name: 'Regletas' },
+        { id: 'con-rapidos', name: 'Conectores rápidos' },
+        { id: 'term-ojal', name: 'Terminales tipo ojal' },
+        { id: 'term-horq', name: 'Terminales tipo horquilla' },
+        { id: 'term-tub', name: 'Terminales tubulares' },
+        { id: 'cinta-aisla', name: 'Cinta aisladora' },
+        { id: 'tubo-termo', name: 'Tubo termocontraíble' },
+        { id: 'jabalina', name: 'Jabalina de cobre' },
+        { id: 'con-jaba', name: 'Conector para jabalina' },
+        { id: 'caja-insp', name: 'Caja de inspección p/ jabalina' },
+        { id: 'tarugos', name: 'Tarugos' },
+        { id: 'tornillos', name: 'Tornillos', hasMms: true }, // <-- 
+        { id: 'arandelas', name: 'Arandelas' },
+        { id: 'abrazaderas', name: 'Abrazaderas' },
+        { id: 'grampas-cab', name: 'Grampas para cable' }
+      ]
+    }
 ];

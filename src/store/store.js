@@ -106,7 +106,6 @@ export const totalItemsCount = () => {
 
 export const generateSummaryText = () => {
   const lines = [];
-
   materialCategories.forEach(cat => {
     const itemsInCat = cart.value.filter(ci =>
       cat.items.some(i => i.id === ci.id)
@@ -115,9 +114,19 @@ export const generateSummaryText = () => {
 
     lines.push(cat.name);
     itemsInCat.forEach(ci => {
+      // Buscamos el ítem original para saber si tiene 'hasMms'
+      const originalItem = cat.items.find(i => i.id === ci.id);
+      
       const colorText = ci.color ? ` ${getColorName(ci.color)}` : '';
-      const metersText = ci.meters ? ` - ${ci.meters} m` : '';
-      lines.push(`   • ${ci.name}${colorText} x${ci.quantity}${metersText}`);
+      
+      // Determinamos el sufijo correcto (mm para tornillos, m para cables)
+      let measurementText = '';
+      if (ci.meters) {
+        const suffix = originalItem?.hasMms ? 'mm' : 'm';
+        measurementText = ` - ${ci.meters} ${suffix}`;
+      }
+
+      lines.push(`   • ${ci.name}${colorText} x${ci.quantity}${measurementText}`);
     });
     lines.push('');
   });
