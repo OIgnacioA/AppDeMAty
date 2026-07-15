@@ -25,14 +25,13 @@
         :style="{ background: color.hex }"
         :title="color.name"
       >
-        <!-- Un check blanco chiquito si está seleccionado -->
         <svg v-if="selectedColor === color.id" class="w-4 h-4 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
           <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
         </svg>
       </button>
     </div>
 
-    <!-- Fila de Cantidad (+ / -) -->
+    <!-- Fila de Cantidad (+ / - / editable a mano) -->
     <div class="flex justify-end items-center gap-4 mt-1">
       <button 
         @click="updateQuantity(item, currentQty - 1, selectedColor)"
@@ -43,9 +42,15 @@
         −
       </button>
       
-      <span class="w-8 text-center font-bold text-xl text-gray-800">
-        {{ currentQty }}
-      </span>
+      <input
+        type="number"
+        inputmode="numeric"
+        min="0"
+        :value="currentQty"
+        @focus="$event.target.select()"
+        @change="handleManualInput"
+        class="w-16 text-center font-bold text-xl text-gray-800 bg-gray-50 rounded-lg py-1 focus:outline-none focus:ring-2 focus:ring-blue-300 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+      >
 
       <button 
         @click="updateQuantity(item, currentQty + 1, selectedColor)"
@@ -71,4 +76,16 @@ const selectedColor = ref(props.item.hasColors ? colors[0].id : null);
 
 // Cantidad reactiva basada en el color seleccionado actual
 const currentQty = computed(() => getQuantity(props.item.id, selectedColor.value));
+
+// Permite escribir la cantidad a mano
+const handleManualInput = (event) => {
+  let value = parseInt(event.target.value, 10);
+
+  if (isNaN(value) || value < 0) {
+    value = 0;
+  }
+
+  updateQuantity(props.item, value, selectedColor.value);
+  event.target.value = value; // normaliza lo que se ve en el input
+};
 </script>
