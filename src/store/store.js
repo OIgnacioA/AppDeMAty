@@ -22,7 +22,7 @@ watch(observations, (newObs) => {
 });
 
 // 3. Funciones del Carrito
-export const updateQuantity = (item, quantity, color = null) => {
+export const updateQuantity = (item, quantity, color = null, meters = null) => {
   const cartItemId = color ? `${item.id}-${color}` : item.id;
   const existing = cart.value.find(i => i.cartId === cartItemId);
 
@@ -30,6 +30,7 @@ export const updateQuantity = (item, quantity, color = null) => {
     cart.value = cart.value.filter(i => i.cartId !== cartItemId);
   } else if (existing) {
     existing.quantity = quantity;
+    if (meters !== null) existing.meters = meters;
   } else {
     cart.value.push({
       cartId: cartItemId,
@@ -37,7 +38,8 @@ export const updateQuantity = (item, quantity, color = null) => {
       name: item.name,
       quantity,
       color,
-      hasColors: item.hasColors
+      hasColors: item.hasColors,
+      meters
     });
   }
 };
@@ -48,6 +50,11 @@ export const getQuantity = (itemId, color = null) => {
   return item ? item.quantity : 0;
 };
 
+export const getMeters = (itemId, color = null) => {
+  const cartItemId = color ? `${itemId}-${color}` : itemId;
+  const item = cart.value.find(i => i.cartId === cartItemId);
+  return item ? item.meters : null;
+};
 // 4. Funciones de Favoritos
 export const toggleFavorite = (itemId) => {
   const index = favorites.value.indexOf(itemId);
@@ -109,7 +116,8 @@ export const generateSummaryText = () => {
     lines.push(cat.name);
     itemsInCat.forEach(ci => {
       const colorText = ci.color ? ` ${getColorName(ci.color)}` : '';
-      lines.push(`   • ${ci.name}${colorText} x${ci.quantity}`);
+      const metersText = ci.meters ? ` - ${ci.meters} m` : '';
+      lines.push(`   • ${ci.name}${colorText} x${ci.quantity}${metersText}`);
     });
     lines.push('');
   });

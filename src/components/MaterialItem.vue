@@ -5,7 +5,6 @@
     <!-- Fila principal: Nombre y Favorito -->
     <div class="flex justify-between items-start gap-2">
       <div class="flex items-start gap-3 flex-1">
-        <!-- Botón Favorito -->
         <button @click="toggleFavorite(item.id)" class="mt-0.5 text-2xl transition-transform active:scale-75">
           <span v-if="isFavorite(item.id)">⭐</span>
           <span v-else class="grayscale opacity-30 hover:grayscale-0 hover:opacity-100 transition-all">⭐</span>
@@ -31,10 +30,20 @@
       </button>
     </div>
 
+    <!-- Metros (solo cables, solo si ya hay cantidad cargada) -->
+    <div v-if="item.hasColors && currentQty > 0" class="pl-9 -mt-1">
+      <button
+        @click="editMeters"
+        class="text-sm text-blue-600 font-medium underline decoration-dotted active:opacity-60"
+      >
+        📏 {{ currentMeters ? `${currentMeters} m` : 'Agregar metros' }}
+      </button>
+    </div>
+
     <!-- Fila de Cantidad (+ / - / editable a mano) -->
     <div class="flex justify-end items-center gap-4 mt-1">
       <button 
-        @click="updateQuantity(item, currentQty - 1, selectedColor)"
+        @click="decrement"
         class="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-xl text-gray-600 font-bold text-2xl active:bg-gray-200 active:scale-95 transition-all"
         :disabled="currentQty === 0"
         :class="{ 'opacity-50 cursor-not-allowed': currentQty === 0 }"
@@ -53,7 +62,7 @@
       >
 
       <button 
-        @click="updateQuantity(item, currentQty + 1, selectedColor)"
+        @click="increment"
         class="w-12 h-12 flex items-center justify-center bg-primary text-white rounded-xl font-bold text-2xl shadow-md active:scale-95 transition-all"
       >
         +
@@ -64,28 +73,55 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { updateQuantity, getQuantity, toggleFavorite, isFavorite } from '../store/store';
+import { updateQuantity, getQuantity, getMeters, toggleFavorite, isFavorite } from '../store/store';
 import { colors } from '../data/materials';
 
 const props = defineProps({
   item: Object
 });
 
-// Color seleccionado por defecto (solo se usa si el material tiene colores)
 const selectedColor = ref(props.item.hasColors ? colors[0].id : null);
 
-// Cantidad reactiva basada en el color seleccionado actual
 const currentQty = computed(() => getQuantity(props.item.id, selectedColor.value));
+const currentMeters = computed(() => props.item.hasColors ? getMeters(props.item.id, selectedColor.value) : null);
 
-// Permite escribir la cantidad a mano
+// Pide los metros por popup nativo
+const askMeters = (defaultVal) => {
+  const input = window.prompt('¿Cuántos metros?', defaultVal ?? '');
+  if (input === null) return currentMeters.value; // canceló, mantiene lo que había
+  const val = parseFloat(input.replace(',', '.'));
+  return isNaN(val) ? null : val;
+};
+
+const increment = () => {
+  const newQty = currentQty.value + 1;
+  if (props.item.hasColors) {
+    const meters = askMeters(currentMeters.value);
+    updateQuantity(props.item, newQty, selectedColor.value, meters);
+  } else {
+    updateQuantity(props.item, newQty, selectedColor.value);
+  }
+};
+
+const decrement = () => {
+  updateQuantity(props.item, currentQty.value - 1, selectedColor.value);
+};
+
+const editMeters = () => {
+  const meters = askMeters(currentMeters.value);
+  updateQuantity(props.item, currentQty.value, selectedColor.value, meters);
+};
+
 const handleManualInput = (event) => {
   let value = parseInt(event.target.value, 10);
+  if (isNaN(value) || value < 0) value = 0;
 
-  if (isNaN(value) || value < 0) {
-    value = 0;
+  if (props.item.hasColors && value > 0) {
+    const meters = askMeters(currentMeters.value);
+    updateQuantity(props.item, value, selectedColor.value, meters);
+  } else {
+    updateQuantity(props.item, value, selectedColor.value);
   }
-
-  updateQuantity(props.item, value, selectedColor.value);
-  event.target.value = value; // normaliza lo que se ve en el input
+  event.target.value = value;
 };
 </script>
