@@ -7,6 +7,7 @@ export const cart = ref(JSON.parse(localStorage.getItem('cart')) || []);
 export const favorites = ref(JSON.parse(localStorage.getItem('favorites')) || []);
 export const observations = ref(localStorage.getItem('observations') || '');
 export const toastMessage = ref('');
+export const withPromptMode = ref(false); // Falso por defecto (modo cliente)
 
 // 2. Watchers para guardar automáticamente cada vez que haya un cambio
 watch(cart, (newCart) => {
@@ -55,6 +56,7 @@ export const getMeters = (itemId, color = null) => {
   const item = cart.value.find(i => i.cartId === cartItemId);
   return item ? item.meters : null;
 };
+
 // 4. Funciones de Favoritos
 export const toggleFavorite = (itemId) => {
   const index = favorites.value.indexOf(itemId);
@@ -87,6 +89,7 @@ export const clearCart = () => {
     showToast('✅ Lista vaciada');
   }
 };
+
 export const resetAll = () => {
   if (confirm('¿Seguro que querés reiniciar todo? Se borrará la lista y las observaciones.')) {
     cart.value = [];
@@ -94,6 +97,7 @@ export const resetAll = () => {
     showToast('🔄 Todo reiniciado');
   }
 };
+
 // 6. Generación y copiado del resumen
 const getColorName = (colorId) => {
   const c = colors.find(c => c.id === colorId);
@@ -106,6 +110,17 @@ export const totalItemsCount = () => {
 
 export const generateSummaryText = () => {
   const lines = [];
+
+  // SI EL MODO PROMPT ESTÁ ACTIVO, INYECTAMOS EL TEXTO PARA LA IA ARRIBA DE TODO
+  if (withPromptMode.value) {
+    lines.push(`Actúa como un electricista experto y auditor de obras residenciales. A continuación, te proporcionaré una lista de materiales seleccionados para una reparación o instalación eléctrica doméstica. Esta lista podría estar incompleta.`);
+    lines.push(`Tu único objetivo es analizar los materiales provistos, deducir qué trabajo se está haciendo y generar una lista de elementos complementarios que el electricista podría estar olvidando para refrescar su memoria.`);
+    lines.push(`\nRESTRICCIONES ESTRICTAS: Devuelve ÚNICAMENTE la lista de elementos sugeridos. No agregues introducciones, saludos, conclusiones ni consejos de seguridad. Sé breve (elemento y una línea corta de por qué podría faltar).`);
+    lines.push(`\nLista de materiales base:`);
+    lines.push(`====================================\n`);
+  }
+
+  // Recorremos las categorías y agregamos los materiales correspondientes
   materialCategories.forEach(cat => {
     const itemsInCat = cart.value.filter(ci =>
       cat.items.some(i => i.id === ci.id)
@@ -152,8 +167,9 @@ export const copySummary = async () => {
   const text = generateSummaryText();
   try {
     await navigator.clipboard.writeText(text);
-    showToast('📋 Lista copiada');
+    showToast(withPromptMode.value ? '🤖 Lista con Prompt copiada' : '📋 Lista copiada');
   } catch (err) {
     showToast('❌ No se pudo copiar');
   }
 };
+

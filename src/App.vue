@@ -1,9 +1,61 @@
 <!-- src/App.vue -->
+<script setup>
+import { ref, computed } from 'vue';
+import MaterialItem from './components/MaterialItem.vue';
+import Toast from './components/Toast.vue';
+import { materialCategories } from './data/materials';
+import { cart, observations, copySummary, resetAll, withPromptMode } from './store/store';
+
+// Estado del buscador
+const searchQuery = ref('');
+
+// Estado de los acordeones
+const openCategories = ref([materialCategories[0].id, materialCategories[1].id]);
+
+const toggleCategory = (id) => {
+  const index = openCategories.value.indexOf(id);
+  if (index === -1) {
+    openCategories.value.push(id);
+  } else {
+    openCategories.value.splice(index, 1);
+  }
+};
+
+const filteredCategories = computed(() => {
+  if (!searchQuery.value) return materialCategories;
+  
+  const query = searchQuery.value.toLowerCase();
+  
+  return materialCategories.map(cat => {
+    const filteredItems = cat.items.filter(item => item.name.toLowerCase().includes(query));
+    
+    if (filteredItems.length > 0) {
+      if (!openCategories.value.includes(cat.id)) openCategories.value.push(cat.id);
+      return { ...cat, items: filteredItems };
+    }
+    return null;
+  }).filter(cat => cat !== null);
+});
+
+const getCategoryCount = (categoryId) => {
+  const category = materialCategories.find(c => c.id === categoryId);
+  if (!category) return 0;
+  
+  const itemIds = category.items.map(i => i.id);
+  
+  return cart.value
+    .filter(cartItem => itemIds.includes(cartItem.id))
+    .reduce((total, cartItem) => total + cartItem.quantity, 0);
+};
+
+// Total de artículos para la barra inferior
+const totalItems = computed(() => cart.value.reduce((t, i) => t + i.quantity, 0));
+</script>
+
 <template>
-  <div class="min-h-screen bg-gray-50 pb-32 font-sans text-gray-800">
+  <div class="min-h-screen bg-gray-50 pb-44 font-sans text-gray-800">
     
     <!-- Header Fijo -->
-     <!-- Header Fijo -->
     <header class="bg-primary text-white pt-6 pb-4 px-4 shadow-md sticky top-0 z-40">
       <div class="relative max-w-md mx-auto mb-4">
         <h1 class="text-2xl font-bold text-center">Materiales Eléctricos</h1>
@@ -36,6 +88,7 @@
         </button>
       </div>
     </header>
+
     <main class="p-4 max-w-md mx-auto flex flex-col gap-4 mt-2">
       
       <!-- Si no hay resultados -->
@@ -90,21 +143,48 @@
           class="w-full bg-gray-50 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none"
         ></textarea>
       </div>
-
     </main>
 
-    <!-- Barra inferior fija: total + copiar -->
-    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-40">
-      <div class="max-w-md mx-auto p-4 flex items-center justify-between gap-4">
-        <span class="font-bold text-gray-700">
-          Total: {{ totalItems }} artículo{{ totalItems === 1 ? '' : 's' }}
-        </span>
+    <!-- Barra inferior fija: total, selectores y botón copiar -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-xl z-40">
+      <div class="max-w-md mx-auto p-4 flex flex-col gap-3">
+        
+        <!-- Fila de información y selector de modo -->
+        <div class="flex items-center justify-between gap-2">
+          <span class="font-bold text-gray-700 text-sm">
+            Total: {{ totalItems }} artículo{{ totalItems === 1 ? '' : 's' }}
+          </span>
+
+          <!-- Selector de Modo (Cliente vs IA) -->
+          <div class="flex gap-1 bg-gray-100 p-1 rounded-lg border border-gray-200">
+            <button 
+              @click="withPromptMode = false"
+              type="button"
+              class="px-2.5 py-1 text-xs font-bold rounded-md transition-all"
+              :class="!withPromptMode ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+            >
+              👤 Cliente
+            </button>
+            <button 
+              @click="withPromptMode = true"
+              type="button"
+              class="px-2.5 py-1 text-xs font-bold rounded-md transition-all"
+              :class="withPromptMode ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+            >
+              🤖 IA
+            </button>
+          </div>
+        </div>
+
+        <!-- Botón de acción principal -->
         <button
           @click="copySummary"
           :disabled="totalItems === 0"
-          class="bg-primary text-white font-bold px-5 py-3 rounded-xl shadow-md active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          class="w-full font-bold py-3 rounded-xl shadow-md active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-white"
+          :class="withPromptMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-primary hover:bg-primary-dark'"
         >
-          📋 Copiar lista
+          <span>📋</span>
+          {{ withPromptMode ? 'Copiar Prompt + Lista para IA' : 'Copiar lista para Cliente' }}
         </button>
       </div>
     </div>
@@ -112,59 +192,6 @@
     <Toast />
   </div>
 </template>
-
-<script setup>
-import { ref, computed } from 'vue';
-import MaterialItem from './components/MaterialItem.vue';
-import Toast from './components/Toast.vue';
-import { materialCategories } from './data/materials';
-import { cart, observations, copySummary, resetAll } from './store/store';
-
-// Estado del buscador
-const searchQuery = ref('');
-
-// Estado de los acordeones
-const openCategories = ref([materialCategories[0].id, materialCategories[1].id]);
-
-const toggleCategory = (id) => {
-  const index = openCategories.value.indexOf(id);
-  if (index === -1) {
-    openCategories.value.push(id);
-  } else {
-    openCategories.value.splice(index, 1);
-  }
-};
-
-const filteredCategories = computed(() => {
-  if (!searchQuery.value) return materialCategories;
-  
-  const query = searchQuery.value.toLowerCase();
-  
-  return materialCategories.map(cat => {
-    const filteredItems = cat.items.filter(item => item.name.toLowerCase().includes(query));
-    
-    if (filteredItems.length > 0) {
-      if (!openCategories.value.includes(cat.id)) openCategories.value.push(cat.id);
-      return { ...cat, items: filteredItems };
-    }
-    return null;
-  }).filter(cat => cat !== null);
-});
-
-const getCategoryCount = (categoryId) => {
-  const category = materialCategories.find(c => c.id === categoryId);
-  if (!category) return 0;
-  
-  const itemIds = category.items.map(i => i.id);
-  
-  return cart.value
-    .filter(cartItem => itemIds.includes(cartItem.id))
-    .reduce((total, cartItem) => total + cartItem.quantity, 0);
-};
-
-// Total de artículos para la barra inferior
-const totalItems = computed(() => cart.value.reduce((t, i) => t + i.quantity, 0));
-</script>
 
 <style>
 .transition-all {
